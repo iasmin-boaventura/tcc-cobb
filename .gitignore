@@ -1,0 +1,30 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# PyCharm files
+.idea/
+*.iml
+
+# Jupyter / IPython
+.ipynb_checkpoints
+
+# OS files
+.DS_Store
+Thumbs.db
+
+*.log
+
+# Checkpoints, modelos e pesos grandes (se você não quiser subir)
+*.pt
+*.pth
+*.ckpt
+
+# Outros arquivos temporários
+*.tmp
