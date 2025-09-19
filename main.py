@@ -1,37 +1,53 @@
-import os
-from PIL import Image
+import base64
+import io
+
 import torch
-from pipeline.CobbPipeline import CobbPipeline
+from PIL import Image
+from fastapi import FastAPI, File, UploadFile
+from fastapi.responses import JSONResponse
 from ultralytics import YOLO
 
-# ----------------- CONFIGURAÇÃO -----------------
+from pipeline.CobbPipeline import CobbPipeline
+
+# Dispositivo de processamento (GPU se disponível, senão CPU)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Caminhos para os modelos
-path_modelo_vertebra = "modelos/vertebra.pt"   # YOLOv8 para detectar vértebras
-path_modelo_angulo_cnn = "modelos/angulo.pt"   # CNN para calcular ângulo
-
-# Carregar modelo de vértebras (YOLOv8)
+path_modelo_vertebra = "modelos/vertebra.pt"
+path_modelo_angulo_cnn = "modelos/angulo.pt"
 modelo_vertebra = YOLO(path_modelo_vertebra)
 
-# ----------------- INICIALIZAR PIPELINE -----------------
+# Carregar modelos
 pipeline = CobbPipeline(
     modelo_vertebra=modelo_vertebra,
     path_angulo_cnn=path_modelo_angulo_cnn,
-    device=device,
-    output_dir="outputs"
+    device=device
 )
 
-# ----------------- PROCESSAR IMAGEM -----------------
-img_path = "teste2.jpg"
-img = Image.open(img_path).convert("L")  # manter grayscale
+app = FastAPI(title="API OrthoAI")
 
-# Executar pipeline
-angulos, cobb_angle, v_sup_angle, v_inf_angle = pipeline.process_image(img, nome_base="paciente2")
+@app.post("/process_image/")
+async def process_image(file: UploadFile = File(...)):
+    """
+    Recebe uma imagem de raio-X, processa na pipeline Cobb,
+    e retorna:
+        - cobb_angle: valor do ângulo de Cobb
+        - image_base64: imagem processada em Base64
+    """
+    try:
+        img = Image.open(file.file).convert("L")  # grayscale
 
-# ----------------- RESULTADOS -----------------
-print("Ângulos das vértebras:", angulos)
-print("Ângulo de Cobb:", cobb_angle)
-print("Ângulos Superior: " + str(v_sup_angle))
-print("Ângulos Inferior: " + str(v_inf_angle))
-print("Arquivos salvos em:", os.path.abspath("outputs"))
+        cobb_angle, img_cobb = pipeline.process_image(img)
+
+        # Converte imagem processada em base64
+        buffer = io.BytesIO()
+        img_cobb.save(buffer, format="PNG")
+        img_bytes = buffer.getvalue()
+        img_base64 = base64.b64encode(img_bytes).decode("utf-8")
+
+        return JSONResponse(content={
+            "cobb_angle": cobb_angle,
+            "image_base64": img_base64
+        })
+
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
