@@ -28,3 +28,4 @@ Thumbs.db
 
 # Outros arquivos temporários
 *.tmp
+/outputs/
