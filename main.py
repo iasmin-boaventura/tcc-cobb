@@ -5,6 +5,7 @@ import torch
 from PIL import Image
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from ultralytics import YOLO
 
 from pipeline.CobbPipeline import CobbPipeline
@@ -24,6 +25,14 @@ pipeline = CobbPipeline(
 )
 
 app = FastAPI(title="API OrthoAI")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.post("/process_image/")
 async def process_image(file: UploadFile = File(...)):
