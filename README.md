@@ -11,45 +11,50 @@ config:
   layout: elk
   theme: redux
 ---
+%%{init: {"themeVariables": { "fontSize": "15px", "classTextSize": "20px" }}}%%
+
 classDiagram
-direction LR
+    direction LR
+
     class CobbPipeline {
-	    - YOLO modelo_vertebra
-	    - AngleCNN modelo_angulo
-	    - torch.device device
-	    + process_image(img: Image)(float, Image)
+        - modelo_vertebra: YOLO //Ultralytics
+        - modelo_angulo: AngleCNN
+        - dispositivo: Device
+        + processar_imagem(img): (float, Image)
     }
+
     class AngleCNN {
-	    - nn.Sequential conv
-	    - nn.Sequential fc
-	    + forward(x)
+        // herda nn.Module [PyTorch]
+        - camadas_conv: nn.Sequential
+        - camadas_fc: nn.Sequential
+        + forward(x)
     }
-    class YOLO {
-	    + __call__(img)
+
+       class CalculoUtil {
+        + centro_bbox(bbox)
+        + coordenadas_linha_horizontal(x_center, y_center, angle_deg, length)
+        + coordenadas_linha_perpendicular(x_fixed, x_start, y_start, x_end, y_end, comprimento, invert)
+        + perpendiculares_dentro_do_angulo(hx_sup, hx_inf, angulos, idx_sup, idx_inf, offset)
+        + calcular_cobb(angulo_sup, angulo_inf)
     }
-    class CalculoUtil {
-	    + centro_bbox(bbox)
-	    + coordenadas_linha_horizontal(x_center, y_center, angle_deg, length=500)
-	    + coordenadas_linha_perpendicular(x_fixed, x_start, y_start, x_end, y_end, comprimento, invert=False)
-	    + perpendiculares_dentro_do_angulo(hx_sup, hx_inf, angulos, idx_sup, idx_inf, offset=30)
-	    + calcular_cobb(angulo_sup, angulo_inf)
-    }
+
     class ImagemUtil {
-	    + redimensionar_com_padding(img, target_size=(640, 640))
-	    + pil_to_tensor(img)
-	    + desenhar_linha(img, coords, color="red", width=2)
-	    + desenhar_texto(img, texto, pos=(50, 50), color="white")
+        + redimensionar_com_padding(img, target_size)
+        + pil_to_tensor(img)
+        + desenhar_linha(img, coords, color, width)
+        + desenhar_texto(img, texto, pos, color)
     }
+
     class InferenciaUtil {
-	    + extrair_angulo(modelo, img_crop, device, preprocess_fn, input_size=(64, 64))
-	    + obter_centros_e_angulos(bboxes, img_norm, modelo_angulo, device, preprocess_fn, input_size=(64,64))
-	    + escolher_extremas(angulos, bboxes, centro_bbox)
+        + extrair_angulo(modelo, img_crop, device, preprocess_fn, input_size)
+        + obter_centros_e_angulos(bboxes, img_norm, modelo_angulo, device, preprocess_fn, input_size)
+        + escolher_extremas(angulos, bboxes, centro_bbox)
     }
-    CobbPipeline --> YOLO : usa
-    CobbPipeline --> AngleCNN : usa
-    CobbPipeline ..> CalculoUtil : usa
-    CobbPipeline ..> ImagemUtil : usa
-    CobbPipeline ..> InferenciaUtil : usa
+
+    CobbPipeline --> AngleCNN
+    CobbPipeline ..> CalculoUtil
+    CobbPipeline ..> ImagemUtil
+    CobbPipeline ..> InferenciaUtil
 ```
 
 ---
